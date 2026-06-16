@@ -32,6 +32,14 @@ public class AtsHistoryEntity {
 
     @Lob
     @Column(columnDefinition = "LONGTEXT")
+    private String matchedSkills;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String missingSkills;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String feedback;
 
     private LocalDateTime createdAt;

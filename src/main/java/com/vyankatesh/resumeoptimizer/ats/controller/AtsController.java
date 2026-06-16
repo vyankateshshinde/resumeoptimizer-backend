@@ -1,5 +1,6 @@
 package com.vyankatesh.resumeoptimizer.ats.controller;
 
+import com.vyankatesh.resumeoptimizer.ats.dto.AtsHistoryResponse;
 import com.vyankatesh.resumeoptimizer.ats.dto.AtsRequest;
 import com.vyankatesh.resumeoptimizer.ats.dto.AtsResponse;
 import com.vyankatesh.resumeoptimizer.ats.service.AtsService;
@@ -9,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/ats")
@@ -24,10 +27,8 @@ public class AtsController {
             @RequestBody AtsRequest request
     ) {
 
-        // =========================
-        // STEP 1: GET AUTH USER
-        // =========================
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth =
+                SecurityContextHolder.getContext().getAuthentication();
 
         if (auth == null || !auth.isAuthenticated()) {
             throw new RuntimeException("User not authenticated");
@@ -35,38 +36,36 @@ public class AtsController {
 
         String email = auth.getName();
 
-        System.out.println("=== ATS DEBUG START ===");
-        System.out.println("LOGGED IN USER = " + email);
-
-        // =========================
-        // STEP 2: FETCH RESUME
-        // =========================
         ResumeEntity resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new RuntimeException("Resume not found"));
+                .orElseThrow(() ->
+                        new RuntimeException("Resume not found"));
 
-        // =========================
-        // STEP 3: SECURITY CHECK
-        // =========================
+        // Security Check
         if (!resume.getEmail().equals(email)) {
-            throw new RuntimeException("Unauthorized access to resume");
+            throw new RuntimeException(
+                    "Unauthorized access to resume");
         }
 
-        System.out.println("RESUME ID = " + resumeId);
-        System.out.println("RESUME OWNER = " + resume.getEmail());
-
-        // =========================
-        // STEP 4: ATS CALCULATION (UPDATED CALL)
-        // =========================
-        AtsResponse response = atsService.calculateAtsScore(
+        return atsService.calculateAtsScore(
                 resume.getExtractedText(),
                 request.getJobDescription(),
                 email,
-                resumeId
+                resume.getId()
         );
+    }
 
-        System.out.println("FINAL SCORE = " + response.getFinalScore());
-        System.out.println("=== ATS DEBUG END ===");
+    @GetMapping("/history")
+    public List<AtsHistoryResponse> getHistory() {
 
-        return response;
+        Authentication auth =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        String email = auth.getName();
+
+        return atsService.getHistory(email);
     }
 }
