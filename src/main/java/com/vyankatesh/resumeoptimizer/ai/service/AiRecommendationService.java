@@ -4,6 +4,8 @@ import com.vyankatesh.resumeoptimizer.ai.dto.AiRecommendationRequest;
 import com.vyankatesh.resumeoptimizer.ai.dto.AiRecommendationResponse;
 import com.vyankatesh.resumeoptimizer.ai.entity.AiRecommendationEntity;
 import com.vyankatesh.resumeoptimizer.ai.repository.AiRecommendationRepository;
+import com.vyankatesh.resumeoptimizer.resume.ResumeEntity;
+import com.vyankatesh.resumeoptimizer.resume.ResumeRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,22 +14,40 @@ import java.util.List;
 public class AiRecommendationService {
 
     private final AiRecommendationRepository aiRecommendationRepository;
+    private final ResumeRepository resumeRepository;
+    private final GroqService groqService;
 
-    public AiRecommendationService(AiRecommendationRepository aiRecommendationRepository) {
+    public AiRecommendationService(
+            AiRecommendationRepository aiRecommendationRepository,
+            ResumeRepository resumeRepository,
+            GroqService groqService
+    ) {
         this.aiRecommendationRepository = aiRecommendationRepository;
+        this.resumeRepository = resumeRepository;
+        this.groqService = groqService;
     }
 
     public AiRecommendationResponse generateRecommendation(AiRecommendationRequest request) {
 
-        String summary = "Improve your professional summary by highlighting Java, Spring Boot, REST APIs, React.js, MySQL, and real-world project experience.";
+        ResumeEntity resume = resumeRepository.findById(request.getResumeId())
+                .orElseThrow(() -> new RuntimeException("Resume not found with id: " + request.getResumeId()));
 
-        String skills = "Add or highlight skills such as Java 17, Spring Boot, Spring Security, JWT, REST APIs, Hibernate, JPA, React.js, MySQL, Docker, and Microservices.";
+        String resumeText = resume.getExtractedText();
 
-        String projects = "Enhance your project description by mentioning business impact, secure authentication, resume parsing, ATS score calculation, dashboard analytics, and AI-powered recommendations.";
+        if (resumeText == null || resumeText.isBlank()) {
+            throw new RuntimeException("Resume extracted text is empty. Please upload and parse resume again.");
+        }
 
-        String missingSkills = "Docker, Microservices, JUnit, Mockito, Swagger, CI/CD";
+        String aiResponse = groqService.generateRecommendation(
+                resumeText,
+                request.getJobDescription()
+        );
 
-        String roadmap = "Week 1: Revise Docker and Spring Boot deployment. Week 2: Practice Microservices and REST API design. Week 3: Add JUnit and Mockito tests. Week 4: Improve frontend dashboard using React and Recharts.";
+        String summary = extractSection(aiResponse, "Summary Recommendation:", "Skill Recommendation:");
+        String skills = extractSection(aiResponse, "Skill Recommendation:", "Project Recommendation:");
+        String projects = extractSection(aiResponse, "Project Recommendation:", "Missing Skills:");
+        String missingSkills = extractSection(aiResponse, "Missing Skills:", "Learning Roadmap:");
+        String roadmap = extractSection(aiResponse, "Learning Roadmap:", null);
 
         AiRecommendationEntity entity = new AiRecommendationEntity();
         entity.setResumeId(request.getResumeId());
@@ -52,5 +72,30 @@ public class AiRecommendationService {
 
     public List<AiRecommendationEntity> getRecommendationHistory(Long resumeId) {
         return aiRecommendationRepository.findByResumeId(resumeId);
+    }
+
+    private String extractSection(String text, String startLabel, String endLabel) {
+
+        int startIndex = text.indexOf(startLabel);
+
+        if (startIndex == -1) {
+            return "";
+        }
+
+        startIndex = startIndex + startLabel.length();
+
+        int endIndex;
+
+        if (endLabel == null) {
+            endIndex = text.length();
+        } else {
+            endIndex = text.indexOf(endLabel, startIndex);
+
+            if (endIndex == -1) {
+                endIndex = text.length();
+            }
+        }
+
+        return text.substring(startIndex, endIndex).trim();
     }
 }

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -15,15 +16,8 @@ public class ResumeService {
 
     public ResumeEntity uploadResume(MultipartFile file, String email) throws IOException {
 
-        // Extract text from PDF
         String extractedText = resumeParserService.extractText(file);
 
-        System.out.println("===== DEBUG START =====");
-        System.out.println("FILE NAME: " + file.getOriginalFilename());
-        System.out.println("EXTRACTED TEXT: " + extractedText);
-        System.out.println("===== DEBUG END =====");
-
-        // Save Resume
         ResumeEntity resume = new ResumeEntity();
         resume.setFileName(file.getOriginalFilename());
         resume.setFileType(file.getContentType());
@@ -35,11 +29,11 @@ public class ResumeService {
     }
 
     public ResumeEntity getMyResume(String email) {
-
         return resumeRepository.findTopByEmailOrderByIdDesc(email)
-                .stream()
-                .findFirst()
-                .orElseThrow(() ->
-                        new RuntimeException("Resume not found"));
+                .orElseThrow(() -> new RuntimeException("Resume not found"));
+    }
+
+    public List<ResumeEntity> getMyResumes(String email) {
+        return resumeRepository.findByEmailOrderByIdDesc(email);
     }
 }

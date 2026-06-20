@@ -11,22 +11,27 @@ public class ResumeVersion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long resumeId;
-
+    private String userEmail;
     private String versionName;
+    private String templateName;
 
-    @Column(columnDefinition = "TEXT")
-    private String summary;
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String originalResumeText;
 
-    @Column(columnDefinition = "TEXT")
-    private String skills;
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String optimizedResumeText;
 
-    @Column(columnDefinition = "TEXT")
-    private String projects;
+    private int atsScore;
 
     private LocalDateTime createdAt;
 
     public ResumeVersion() {
+    }
+
+    @PrePersist
+    public void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
@@ -34,12 +39,12 @@ public class ResumeVersion {
         return id;
     }
 
-    public Long getResumeId() {
-        return resumeId;
+    public String getUserEmail() {
+        return userEmail;
     }
 
-    public void setResumeId(Long resumeId) {
-        this.resumeId = resumeId;
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
     }
 
     public String getVersionName() {
@@ -50,28 +55,36 @@ public class ResumeVersion {
         this.versionName = versionName;
     }
 
-    public String getSummary() {
-        return summary;
+    public String getTemplateName() {
+        return templateName;
     }
 
-    public void setSummary(String summary) {
-        this.summary = summary;
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
     }
 
-    public String getSkills() {
-        return skills;
+    public String getOriginalResumeText() {
+        return originalResumeText;
     }
 
-    public void setSkills(String skills) {
-        this.skills = skills;
+    public void setOriginalResumeText(String originalResumeText) {
+        this.originalResumeText = originalResumeText;
     }
 
-    public String getProjects() {
-        return projects;
+    public String getOptimizedResumeText() {
+        return optimizedResumeText;
     }
 
-    public void setProjects(String projects) {
-        this.projects = projects;
+    public void setOptimizedResumeText(String optimizedResumeText) {
+        this.optimizedResumeText = optimizedResumeText;
+    }
+
+    public int getAtsScore() {
+        return atsScore;
+    }
+
+    public void setAtsScore(int atsScore) {
+        this.atsScore = atsScore;
     }
 
     public LocalDateTime getCreatedAt() {

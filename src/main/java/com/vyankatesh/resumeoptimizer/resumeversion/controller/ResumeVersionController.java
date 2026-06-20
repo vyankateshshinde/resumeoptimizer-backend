@@ -1,16 +1,14 @@
 package com.vyankatesh.resumeoptimizer.resumeversion.controller;
 
-import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeVersionRequest;
-import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeVersionResponse;
 import com.vyankatesh.resumeoptimizer.resumeversion.entity.ResumeVersion;
 import com.vyankatesh.resumeoptimizer.resumeversion.service.ResumeVersionService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/resume-version")
+@RequestMapping("/api/resume-versions")
+@CrossOrigin(origins = "http://localhost:5173")
 public class ResumeVersionController {
 
     private final ResumeVersionService resumeVersionService;
@@ -19,33 +17,24 @@ public class ResumeVersionController {
         this.resumeVersionService = resumeVersionService;
     }
 
-    @PostMapping("/save")
-    public ResponseEntity<ResumeVersionResponse> saveVersion(
-            @RequestBody ResumeVersionRequest request
-    ) {
-        ResumeVersionResponse response = resumeVersionService.saveVersion(request);
-        return ResponseEntity.ok(response);
+    @PostMapping
+    public ResumeVersion saveVersion(@RequestBody ResumeVersion resumeVersion) {
+        return resumeVersionService.saveVersion(resumeVersion);
     }
 
-    @GetMapping("/history/{resumeId}")
-    public ResponseEntity<List<ResumeVersion>> getVersionsByResumeId(
-            @PathVariable Long resumeId
-    ) {
-        return ResponseEntity.ok(resumeVersionService.getVersionsByResumeId(resumeId));
+    @GetMapping("/{userEmail}")
+    public List<ResumeVersion> getUserVersions(@PathVariable String userEmail) {
+        return resumeVersionService.getUserVersions(userEmail);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ResumeVersion> getVersionById(
-            @PathVariable Long id
-    ) {
-        return ResponseEntity.ok(resumeVersionService.getVersionById(id));
+    @GetMapping("/version/{id}")
+    public ResumeVersion getVersionById(@PathVariable Long id) {
+        return resumeVersionService.getVersionById(id);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteVersion(
-            @PathVariable Long id
-    ) {
-        return ResponseEntity.ok(resumeVersionService.deleteVersion(id));
+    public String deleteVersion(@PathVariable Long id) {
+        resumeVersionService.deleteVersion(id);
+        return "Resume version deleted successfully";
     }
 }
-

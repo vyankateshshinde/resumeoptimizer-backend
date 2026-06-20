@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface ResumeVersionRepository extends JpaRepository<ResumeVersion, Long> {
 
-    List<ResumeVersion> findByResumeId(Long resumeId);
+    List<ResumeVersion> findByUserEmailOrderByCreatedAtDesc(String userEmail);
 }
