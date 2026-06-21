@@ -29,8 +29,15 @@ public class AiRecommendationService {
 
     public AiRecommendationResponse generateRecommendation(AiRecommendationRequest request) {
 
+        if (request.getResumeId() == null) {
+            throw new RuntimeException("Resume ID is required. Please run ATS analysis again.");
+        }
+
         ResumeEntity resume = resumeRepository.findById(request.getResumeId())
-                .orElseThrow(() -> new RuntimeException("Resume not found with id: " + request.getResumeId()));
+                .orElseThrow(() -> new RuntimeException(
+                        "Resume not found with id: " + request.getResumeId()
+                                + ". Please select a valid uploaded resume and run ATS analysis again."
+                ));
 
         String resumeText = resume.getExtractedText();
 
@@ -38,9 +45,15 @@ public class AiRecommendationService {
             throw new RuntimeException("Resume extracted text is empty. Please upload and parse resume again.");
         }
 
+        String jobDescription = request.getJobDescription();
+
+        if (jobDescription == null || jobDescription.isBlank()) {
+            throw new RuntimeException("Job description is required.");
+        }
+
         String aiResponse = groqService.generateRecommendation(
                 resumeText,
-                request.getJobDescription()
+                jobDescription
         );
 
         String summary = extractSection(aiResponse, "Summary Recommendation:", "Skill Recommendation:");
@@ -51,7 +64,7 @@ public class AiRecommendationService {
 
         AiRecommendationEntity entity = new AiRecommendationEntity();
         entity.setResumeId(request.getResumeId());
-        entity.setJobDescription(request.getJobDescription());
+        entity.setJobDescription(jobDescription);
         entity.setSummaryRecommendation(summary);
         entity.setSkillRecommendation(skills);
         entity.setProjectRecommendation(projects);
@@ -71,10 +84,19 @@ public class AiRecommendationService {
     }
 
     public List<AiRecommendationEntity> getRecommendationHistory(Long resumeId) {
+
+        if (resumeId == null) {
+            throw new RuntimeException("Resume ID is required.");
+        }
+
         return aiRecommendationRepository.findByResumeId(resumeId);
     }
 
     private String extractSection(String text, String startLabel, String endLabel) {
+
+        if (text == null || text.isBlank()) {
+            return "";
+        }
 
         int startIndex = text.indexOf(startLabel);
 
