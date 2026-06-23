@@ -7,26 +7,44 @@ public class ResumeVersionResponse {
     private Long id;
     private Long resumeId;
     private String versionName;
-    private String summary;
+    private String templateName;
+    private String fullResumeText;
+    private String professionalSummary;
     private String skills;
-    private String projects;
+    private String experienceBullets;
+    private String projectBullets;
+    private String education;
+    private int atsScore;
     private LocalDateTime createdAt;
+
+    public ResumeVersionResponse() {
+    }
 
     public ResumeVersionResponse(
             Long id,
             Long resumeId,
             String versionName,
-            String summary,
+            String templateName,
+            String fullResumeText,
+            String professionalSummary,
             String skills,
-            String projects,
+            String experienceBullets,
+            String projectBullets,
+            String education,
+            int atsScore,
             LocalDateTime createdAt
     ) {
         this.id = id;
         this.resumeId = resumeId;
         this.versionName = versionName;
-        this.summary = summary;
+        this.templateName = templateName;
+        this.fullResumeText = fullResumeText;
+        this.professionalSummary = professionalSummary;
         this.skills = skills;
-        this.projects = projects;
+        this.experienceBullets = experienceBullets;
+        this.projectBullets = projectBullets;
+        this.education = education;
+        this.atsScore = atsScore;
         this.createdAt = createdAt;
     }
 
@@ -42,16 +60,36 @@ public class ResumeVersionResponse {
         return versionName;
     }
 
-    public String getSummary() {
-        return summary;
+    public String getTemplateName() {
+        return templateName;
+    }
+
+    public String getFullResumeText() {
+        return fullResumeText;
+    }
+
+    public String getProfessionalSummary() {
+        return professionalSummary;
     }
 
     public String getSkills() {
         return skills;
     }
 
-    public String getProjects() {
-        return projects;
+    public String getExperienceBullets() {
+        return experienceBullets;
+    }
+
+    public String getProjectBullets() {
+        return projectBullets;
+    }
+
+    public String getEducation() {
+        return education;
+    }
+
+    public int getAtsScore() {
+        return atsScore;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -1,3 +1,4 @@
+
 package com.vyankatesh.resumeoptimizer.resumeversion.entity;
 
 import jakarta.persistence.*;
@@ -11,17 +12,35 @@ public class ResumeVersion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long resumeId;
+
     private String userEmail;
     private String versionName;
     private String templateName;
 
     @Lob
     @Column(columnDefinition = "LONGTEXT")
-    private String originalResumeText;
+    private String fullResumeText;
 
     @Lob
     @Column(columnDefinition = "LONGTEXT")
-    private String optimizedResumeText;
+    private String professionalSummary;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String skills;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String experienceBullets;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String projectBullets;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String education;
 
     private int atsScore;
 
@@ -37,6 +56,14 @@ public class ResumeVersion {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getResumeId() {
+        return resumeId;
+    }
+
+    public void setResumeId(Long resumeId) {
+        this.resumeId = resumeId;
     }
 
     public String getUserEmail() {
@@ -63,20 +90,52 @@ public class ResumeVersion {
         this.templateName = templateName;
     }
 
-    public String getOriginalResumeText() {
-        return originalResumeText;
+    public String getFullResumeText() {
+        return fullResumeText;
     }
 
-    public void setOriginalResumeText(String originalResumeText) {
-        this.originalResumeText = originalResumeText;
+    public void setFullResumeText(String fullResumeText) {
+        this.fullResumeText = fullResumeText;
     }
 
-    public String getOptimizedResumeText() {
-        return optimizedResumeText;
+    public String getProfessionalSummary() {
+        return professionalSummary;
     }
 
-    public void setOptimizedResumeText(String optimizedResumeText) {
-        this.optimizedResumeText = optimizedResumeText;
+    public void setProfessionalSummary(String professionalSummary) {
+        this.professionalSummary = professionalSummary;
+    }
+
+    public String getSkills() {
+        return skills;
+    }
+
+    public void setSkills(String skills) {
+        this.skills = skills;
+    }
+
+    public String getExperienceBullets() {
+        return experienceBullets;
+    }
+
+    public void setExperienceBullets(String experienceBullets) {
+        this.experienceBullets = experienceBullets;
+    }
+
+    public String getProjectBullets() {
+        return projectBullets;
+    }
+
+    public void setProjectBullets(String projectBullets) {
+        this.projectBullets = projectBullets;
+    }
+
+    public String getEducation() {
+        return education;
+    }
+
+    public void setEducation(String education) {
+        this.education = education;
     }
 
     public int getAtsScore() {

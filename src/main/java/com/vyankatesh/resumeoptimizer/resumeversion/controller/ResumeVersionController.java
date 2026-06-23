@@ -1,7 +1,9 @@
 package com.vyankatesh.resumeoptimizer.resumeversion.controller;
 
-import com.vyankatesh.resumeoptimizer.resumeversion.entity.ResumeVersion;
+import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeVersionRequest;
+import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeVersionResponse;
 import com.vyankatesh.resumeoptimizer.resumeversion.service.ResumeVersionService;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,19 +19,27 @@ public class ResumeVersionController {
         this.resumeVersionService = resumeVersionService;
     }
 
-    @PostMapping
-    public ResumeVersion saveVersion(@RequestBody ResumeVersion resumeVersion) {
-        return resumeVersionService.saveVersion(resumeVersion);
+    @PostMapping("/save")
+    public ResumeVersionResponse saveVersion(
+            @RequestBody ResumeVersionRequest request,
+            Authentication authentication
+    ) {
+        return resumeVersionService.saveVersion(request, authentication.getName());
     }
 
-    @GetMapping("/{userEmail}")
-    public List<ResumeVersion> getUserVersions(@PathVariable String userEmail) {
-        return resumeVersionService.getUserVersions(userEmail);
+    @GetMapping("/my-versions")
+    public List<ResumeVersionResponse> getMyVersions(Authentication authentication) {
+        return resumeVersionService.getUserVersions(authentication.getName());
     }
 
-    @GetMapping("/version/{id}")
-    public ResumeVersion getVersionById(@PathVariable Long id) {
+    @GetMapping("/{id}")
+    public ResumeVersionResponse getVersionById(@PathVariable Long id) {
         return resumeVersionService.getVersionById(id);
+    }
+
+    @PostMapping("/duplicate/{id}")
+    public ResumeVersionResponse duplicateVersion(@PathVariable Long id) {
+        return resumeVersionService.duplicateVersion(id);
     }
 
     @DeleteMapping("/{id}")
