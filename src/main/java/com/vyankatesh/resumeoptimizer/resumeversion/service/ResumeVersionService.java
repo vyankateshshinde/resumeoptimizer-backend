@@ -1,11 +1,15 @@
 package com.vyankatesh.resumeoptimizer.resumeversion.service;
 
+import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeComparisonRequest;
+import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeComparisonResponse;
 import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeVersionRequest;
 import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeVersionResponse;
 import com.vyankatesh.resumeoptimizer.resumeversion.entity.ResumeVersion;
 import com.vyankatesh.resumeoptimizer.resumeversion.repository.ResumeVersionRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,12 +24,28 @@ public class ResumeVersionService {
 
     public ResumeVersionResponse saveVersion(ResumeVersionRequest request, String userEmail) {
 
+        if (request.getResumeId() == null) {
+            throw new RuntimeException("Resume ID is required");
+        }
+
+        if (request.getFullResumeText() == null || request.getFullResumeText().isBlank()) {
+            throw new RuntimeException("Resume content is required");
+        }
+
         ResumeVersion version = new ResumeVersion();
 
         version.setResumeId(request.getResumeId());
         version.setUserEmail(userEmail);
-        version.setVersionName(request.getVersionName());
-        version.setTemplateName(request.getTemplateName());
+        version.setVersionName(
+                request.getVersionName() == null || request.getVersionName().isBlank()
+                        ? "Untitled Resume Version"
+                        : request.getVersionName()
+        );
+        version.setTemplateName(
+                request.getTemplateName() == null || request.getTemplateName().isBlank()
+                        ? "ATS Professional"
+                        : request.getTemplateName()
+        );
         version.setFullResumeText(request.getFullResumeText());
         version.setProfessionalSummary(request.getProfessionalSummary());
         version.setSkills(request.getSkills());
@@ -76,12 +96,71 @@ public class ResumeVersionService {
         return mapToResponse(savedCopy);
     }
 
+    public ResumeComparisonResponse compareVersions(ResumeComparisonRequest request) {
+
+        if (request.getVersionId1() == null || request.getVersionId2() == null) {
+            throw new RuntimeException("Both version IDs are required");
+        }
+
+        if (request.getVersionId1().equals(request.getVersionId2())) {
+            throw new RuntimeException("Please select two different resume versions");
+        }
+
+        ResumeVersion version1 = resumeVersionRepository.findById(request.getVersionId1())
+                .orElseThrow(() -> new RuntimeException("Version 1 not found with id: " + request.getVersionId1()));
+
+        ResumeVersion version2 = resumeVersionRepository.findById(request.getVersionId2())
+                .orElseThrow(() -> new RuntimeException("Version 2 not found with id: " + request.getVersionId2()));
+
+        List<String> skills1 = splitSkills(version1.getSkills());
+        List<String> skills2 = splitSkills(version2.getSkills());
+
+        List<String> addedSkills = new ArrayList<>(skills2);
+        addedSkills.removeAll(skills1);
+
+        List<String> removedSkills = new ArrayList<>(skills1);
+        removedSkills.removeAll(skills2);
+
+        int scoreDifference = version2.getAtsScore() - version1.getAtsScore();
+
+        ResumeComparisonResponse response = new ResumeComparisonResponse();
+
+        response.setVersion1Name(version1.getVersionName());
+        response.setVersion2Name(version2.getVersionName());
+        response.setAtsScoreDifference(scoreDifference);
+        response.setAddedSkills(addedSkills);
+        response.setRemovedSkills(removedSkills);
+
+        response.setComparisonSummary(
+                "Compared " + version1.getVersionName()
+                        + " with "
+                        + version2.getVersionName()
+                        + ". ATS score difference is "
+                        + scoreDifference
+                        + "%."
+        );
+
+        return response;
+    }
+
     public void deleteVersion(Long id) {
         if (!resumeVersionRepository.existsById(id)) {
             throw new RuntimeException("Resume version not found with id: " + id);
         }
 
         resumeVersionRepository.deleteById(id);
+    }
+
+    private List<String> splitSkills(String skills) {
+
+        if (skills == null || skills.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        return Arrays.stream(skills.split(","))
+                .map(String::trim)
+                .filter(skill -> !skill.isBlank())
+                .collect(Collectors.toList());
     }
 
     private ResumeVersionResponse mapToResponse(ResumeVersion version) {

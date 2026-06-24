@@ -1,5 +1,7 @@
 package com.vyankatesh.resumeoptimizer.resumeversion.controller;
 
+import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeComparisonRequest;
+import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeComparisonResponse;
 import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeVersionRequest;
 import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeVersionResponse;
 import com.vyankatesh.resumeoptimizer.resumeversion.service.ResumeVersionService;
@@ -24,26 +26,46 @@ public class ResumeVersionController {
             @RequestBody ResumeVersionRequest request,
             Authentication authentication
     ) {
-        return resumeVersionService.saveVersion(request, authentication.getName());
+        return resumeVersionService.saveVersion(
+                request,
+                authentication.getName()
+        );
     }
 
     @GetMapping("/my-versions")
-    public List<ResumeVersionResponse> getMyVersions(Authentication authentication) {
-        return resumeVersionService.getUserVersions(authentication.getName());
+    public List<ResumeVersionResponse> getMyVersions(
+            Authentication authentication
+    ) {
+        return resumeVersionService.getUserVersions(
+                authentication.getName()
+        );
     }
 
     @GetMapping("/{id}")
-    public ResumeVersionResponse getVersionById(@PathVariable Long id) {
+    public ResumeVersionResponse getVersionById(
+            @PathVariable Long id
+    ) {
         return resumeVersionService.getVersionById(id);
     }
 
     @PostMapping("/duplicate/{id}")
-    public ResumeVersionResponse duplicateVersion(@PathVariable Long id) {
+    public ResumeVersionResponse duplicateVersion(
+            @PathVariable Long id
+    ) {
         return resumeVersionService.duplicateVersion(id);
     }
 
+    @PostMapping("/compare")
+    public ResumeComparisonResponse compareVersions(
+            @RequestBody ResumeComparisonRequest request
+    ) {
+        return resumeVersionService.compareVersions(request);
+    }
+
     @DeleteMapping("/{id}")
-    public String deleteVersion(@PathVariable Long id) {
+    public String deleteVersion(
+            @PathVariable Long id
+    ) {
         resumeVersionService.deleteVersion(id);
         return "Resume version deleted successfully";
     }
