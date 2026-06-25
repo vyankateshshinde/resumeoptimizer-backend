@@ -1,5 +1,7 @@
 package com.vyankatesh.resumeoptimizer.resumeversion.controller;
 
+import com.vyankatesh.resumeoptimizer.resumeversion.dto.TemplateRecommendationRequest;
+import com.vyankatesh.resumeoptimizer.resumeversion.dto.TemplateRecommendationResponse;
 import com.vyankatesh.resumeoptimizer.resumeversion.entity.ResumeTemplate;
 import com.vyankatesh.resumeoptimizer.resumeversion.service.ResumeTemplateService;
 import org.springframework.web.bind.annotation.*;
@@ -20,5 +22,12 @@ public class ResumeTemplateController {
     @GetMapping
     public List<ResumeTemplate> getTopTemplates() {
         return resumeTemplateService.getTopTemplates();
+    }
+
+    @PostMapping("/recommend")
+    public TemplateRecommendationResponse recommendTemplate(
+            @RequestBody TemplateRecommendationRequest request
+    ) {
+        return resumeTemplateService.recommendTemplate(request);
     }
 }

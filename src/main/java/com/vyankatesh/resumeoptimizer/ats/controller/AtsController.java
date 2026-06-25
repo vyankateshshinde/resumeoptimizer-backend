@@ -36,14 +36,13 @@ public class AtsController {
 
         String email = auth.getName();
 
-        ResumeEntity resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() ->
-                        new RuntimeException("Resume not found"));
+        System.out.println("AUTH SET FOR EMAIL = " + email);
 
-        // Security Check
+        ResumeEntity resume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new RuntimeException("Resume not found"));
+
         if (!resume.getEmail().equals(email)) {
-            throw new RuntimeException(
-                    "Unauthorized access to resume");
+            throw new RuntimeException("Unauthorized access to resume");
         }
 
         return atsService.calculateAtsScore(
@@ -66,6 +65,28 @@ public class AtsController {
 
         String email = auth.getName();
 
+        System.out.println("AUTH SET FOR EMAIL = " + email);
+
         return atsService.getHistory(email);
+    }
+
+    @GetMapping("/history/latest/{resumeId}")
+    public AtsHistoryResponse getLatestHistory(
+            @PathVariable Long resumeId
+    ) {
+
+        Authentication auth =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        String email = auth.getName();
+
+        System.out.println("AUTH SET FOR EMAIL = " + email);
+        System.out.println("RESUME ID = " + resumeId);
+
+        return atsService.getLatestHistory(email, resumeId);
     }
 }

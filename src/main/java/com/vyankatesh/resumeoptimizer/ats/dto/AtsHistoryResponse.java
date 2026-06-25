@@ -13,6 +13,8 @@ public class AtsHistoryResponse {
 
     private Long resumeId;
 
+    private String jobDescription;
+
     private int skillScore;
 
     private int keywordScore;

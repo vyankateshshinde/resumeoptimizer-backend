@@ -66,8 +66,12 @@ public class AtsService {
             Map.entry("mockito", "tools")
     );
 
-    public AtsResponse calculateAtsScore(String resumeText, String jobDescription, String email, Long resumeId) {
-
+    public AtsResponse calculateAtsScore(
+            String resumeText,
+            String jobDescription,
+            String email,
+            Long resumeId
+    ) {
         String resume = normalize(resumeText);
         String jd = normalize(jobDescription);
 
@@ -123,6 +127,40 @@ public class AtsService {
         history.setCreatedAt(LocalDateTime.now());
 
         atsHistoryRepository.save(history);
+
+        return response;
+    }
+
+    public List<AtsHistoryResponse> getHistory(String email) {
+        List<AtsHistoryEntity> historyList =
+                atsHistoryRepository.findByEmailOrderByCreatedAtDesc(email);
+
+        return historyList.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public AtsHistoryResponse getLatestHistory(String email, Long resumeId) {
+        AtsHistoryEntity history = atsHistoryRepository
+                .findTopByEmailAndResumeIdOrderByCreatedAtDesc(email, resumeId)
+                .orElseThrow(() -> new RuntimeException("No ATS history found"));
+
+        return mapToResponse(history);
+    }
+
+    private AtsHistoryResponse mapToResponse(AtsHistoryEntity history) {
+        AtsHistoryResponse response = new AtsHistoryResponse();
+
+        response.setId(history.getId());
+        response.setResumeId(history.getResumeId());
+        response.setJobDescription(history.getJobDescription());
+        response.setSkillScore(history.getSkillScore());
+        response.setKeywordScore(history.getKeywordScore());
+        response.setFinalScore(history.getFinalScore());
+        response.setMatchedSkills(history.getMatchedSkills());
+        response.setMissingSkills(history.getMissingSkills());
+        response.setFeedback(history.getFeedback());
+        response.setCreatedAt(history.getCreatedAt());
 
         return response;
     }
@@ -227,28 +265,5 @@ public class AtsService {
         return missingSkills.isEmpty()
                 ? "Low match. Resume needs stronger alignment with this job description."
                 : "Low match. Strongly recommend improving: " + missingSkills;
-    }
-
-    public List<AtsHistoryResponse> getHistory(String email) {
-        List<AtsHistoryEntity> historyList =
-                atsHistoryRepository.findByEmailOrderByCreatedAtDesc(email);
-
-        return historyList.stream()
-                .map(history -> {
-                    AtsHistoryResponse response = new AtsHistoryResponse();
-
-                    response.setId(history.getId());
-                    response.setResumeId(history.getResumeId());
-                    response.setSkillScore(history.getSkillScore());
-                    response.setKeywordScore(history.getKeywordScore());
-                    response.setFinalScore(history.getFinalScore());
-                    response.setMatchedSkills(history.getMatchedSkills());
-                    response.setMissingSkills(history.getMissingSkills());
-                    response.setFeedback(history.getFeedback());
-                    response.setCreatedAt(history.getCreatedAt());
-
-                    return response;
-                })
-                .collect(Collectors.toList());
     }
 }

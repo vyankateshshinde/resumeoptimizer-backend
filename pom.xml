@@ -72,6 +72,19 @@
 			<artifactId>tika-parsers-standard-package</artifactId>
 			<version>2.9.2</version>
 		</dependency>
+		<!-- PDF EXPORT -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>2.0.30</version>
+		</dependency>
+
+		<!-- DOCX EXPORT -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.2.5</version>
+		</dependency>
 
 		<!-- DEVTOOLS -->
 		<dependency>
