@@ -9,4 +9,5 @@ public interface AiRecommendationRepository extends JpaRepository<AiRecommendati
 
     List<AiRecommendationEntity> findByResumeId(Long resumeId);
 
+    List<AiRecommendationEntity> findByResumeIdOrderByCreatedAtDesc(Long resumeId);
 }
