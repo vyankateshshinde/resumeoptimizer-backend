@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vyankatesh.resumeoptimizer.ai.service.GroqService;
 import com.vyankatesh.resumeoptimizer.aiats.dto.AiAtsRequest;
 import com.vyankatesh.resumeoptimizer.aiats.dto.AiAtsResponse;
+import com.vyankatesh.resumeoptimizer.ats.entity.AtsHistoryEntity;
+import com.vyankatesh.resumeoptimizer.ats.repository.AtsHistoryRepository;
 import com.vyankatesh.resumeoptimizer.resume.ResumeEntity;
 import com.vyankatesh.resumeoptimizer.resume.ResumeRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,15 +23,18 @@ public class AiAtsService {
     private final ResumeRepository resumeRepository;
     private final GroqService groqService;
     private final ObjectMapper objectMapper;
+    private final AtsHistoryRepository atsHistoryRepository;
 
     public AiAtsService(
             ResumeRepository resumeRepository,
             GroqService groqService,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            AtsHistoryRepository atsHistoryRepository
     ) {
         this.resumeRepository = resumeRepository;
         this.groqService = groqService;
         this.objectMapper = objectMapper;
+        this.atsHistoryRepository = atsHistoryRepository;
     }
 
     public AiAtsResponse analyzeResume(AiAtsRequest request) {
@@ -76,11 +82,34 @@ public class AiAtsService {
             // The score is calculated only from the final requirement lists returned by AI.
             response.setAtsScore(calculateAtsScore(matchedSkills, missingSkills));
 
+            saveAiAtsHistory(resume, request.getJobDescription(), response);
+
             return response;
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse AI ATS response: " + e.getMessage(), e);
         }
+    }
+
+    private void saveAiAtsHistory(
+            ResumeEntity resume,
+            String jobDescription,
+            AiAtsResponse response
+    ) {
+        AtsHistoryEntity history = new AtsHistoryEntity();
+
+        history.setEmail(resume.getEmail());
+        history.setResumeId(resume.getId());
+        history.setJobDescription(normalizeJobDescription(jobDescription));
+        history.setSkillScore(response.getAtsScore());
+        history.setKeywordScore(response.getAtsScore());
+        history.setFinalScore(response.getAtsScore());
+        history.setMatchedSkills(String.join(", ", response.getMatchedSkills()));
+        history.setMissingSkills(String.join(", ", response.getMissingSkills()));
+        history.setFeedback(String.join("\n", response.getRecommendations()));
+        history.setCreatedAt(LocalDateTime.now());
+
+        atsHistoryRepository.save(history);
     }
 
     private int calculateAtsScore(List<String> matchedSkills, List<String> missingSkills) {
@@ -138,5 +167,9 @@ public class AiAtsService {
         }
 
         return filteredMissingSkills;
+    }
+
+    private String normalizeJobDescription(String value) {
+        return value == null ? "" : value.trim().replaceAll("\\s+", " ");
     }
 }

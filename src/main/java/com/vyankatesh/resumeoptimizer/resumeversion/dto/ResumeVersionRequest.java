@@ -11,6 +11,7 @@ public class ResumeVersionRequest {
     private String experienceBullets;
     private String projectBullets;
     private String education;
+    private String jobDescription;
     private int atsScore;
 
     public Long getResumeId() {
@@ -83,6 +84,14 @@ public class ResumeVersionRequest {
 
     public void setEducation(String education) {
         this.education = education;
+    }
+
+    public String getJobDescription() {
+        return jobDescription;
+    }
+
+    public void setJobDescription(String jobDescription) {
+        this.jobDescription = jobDescription;
     }
 
     public int getAtsScore() {

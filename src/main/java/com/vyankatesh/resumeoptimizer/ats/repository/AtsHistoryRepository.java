@@ -17,6 +17,12 @@ public interface AtsHistoryRepository extends JpaRepository<AtsHistoryEntity, Lo
             Long resumeId
     );
 
+    Optional<AtsHistoryEntity> findTopByEmailAndResumeIdAndJobDescriptionOrderByCreatedAtDesc(
+            String email,
+            Long resumeId,
+            String jobDescription
+    );
+
     long countByEmail(String email);
 
     @Query("""

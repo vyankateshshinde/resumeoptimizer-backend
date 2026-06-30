@@ -54,6 +54,7 @@ public class ResumeVersionService {
                         ? "ATS Professional"
                         : request.getTemplateName()
         );
+        version.setJobDescription(normalizeJobDescription(request.getJobDescription()));
         version.setFullResumeText(request.getFullResumeText());
         version.setProfessionalSummary(request.getProfessionalSummary());
         version.setSkills(request.getSkills());
@@ -61,9 +62,13 @@ public class ResumeVersionService {
         version.setProjectBullets(request.getProjectBullets());
         version.setEducation(request.getEducation());
 
-        // Always use the latest ATS analysis score for this user's uploaded resume.
-        // Never trust a score sent from frontend or request body.
-        version.setAtsScore(resolveAtsScore(userEmail, request.getResumeId()));
+        version.setAtsScore(
+                resolveAtsScore(
+                        userEmail,
+                        request.getResumeId(),
+                        request.getJobDescription()
+                )
+        );
 
         ResumeVersion saved = resumeVersionRepository.save(version);
 
@@ -98,15 +103,14 @@ public class ResumeVersionService {
         copy.setUserEmail(existing.getUserEmail());
         copy.setVersionName(existing.getVersionName() + " - Copy");
         copy.setTemplateName(existing.getTemplateName());
+        copy.setJobDescription(existing.getJobDescription());
         copy.setFullResumeText(existing.getFullResumeText());
         copy.setProfessionalSummary(existing.getProfessionalSummary());
         copy.setSkills(existing.getSkills());
         copy.setExperienceBullets(existing.getExperienceBullets());
         copy.setProjectBullets(existing.getProjectBullets());
         copy.setEducation(existing.getEducation());
-        copy.setAtsScore(
-                resolveAtsScore(existing.getUserEmail(), existing.getResumeId())
-        );
+        copy.setAtsScore(existing.getAtsScore());
 
         ResumeVersion savedCopy = resumeVersionRepository.save(copy);
 
@@ -143,15 +147,8 @@ public class ResumeVersionService {
         List<String> removedSkills = new ArrayList<>(skills1);
         removedSkills.removeAll(skills2);
 
-        int version1Score = resolveAtsScore(
-                version1.getUserEmail(),
-                version1.getResumeId()
-        );
-
-        int version2Score = resolveAtsScore(
-                version2.getUserEmail(),
-                version2.getResumeId()
-        );
+        int version1Score = version1.getAtsScore();
+        int version2Score = version2.getAtsScore();
 
         ResumeComparisonResponse response = new ResumeComparisonResponse();
 
@@ -183,15 +180,36 @@ public class ResumeVersionService {
         resumeVersionRepository.deleteById(id);
     }
 
-    private int resolveAtsScore(String userEmail, Long resumeId) {
+    private int resolveAtsScore(
+            String userEmail,
+            Long resumeId,
+            String jobDescription
+    ) {
         if (userEmail == null || userEmail.isBlank() || resumeId == null) {
             return 0;
+        }
+
+        String normalizedJobDescription = normalizeJobDescription(jobDescription);
+
+        if (!normalizedJobDescription.isBlank()) {
+            return atsHistoryRepository
+                    .findTopByEmailAndResumeIdAndJobDescriptionOrderByCreatedAtDesc(
+                            userEmail,
+                            resumeId,
+                            normalizedJobDescription
+                    )
+                    .map(history -> Math.max(0, Math.min(100, history.getFinalScore())))
+                    .orElse(0);
         }
 
         return atsHistoryRepository
                 .findTopByEmailAndResumeIdOrderByCreatedAtDesc(userEmail, resumeId)
                 .map(history -> Math.max(0, Math.min(100, history.getFinalScore())))
                 .orElse(0);
+    }
+
+    private String normalizeJobDescription(String value) {
+        return value == null ? "" : value.trim().replaceAll("\\s+", " ");
     }
 
     private List<String> splitSkills(String skills) {
@@ -206,11 +224,6 @@ public class ResumeVersionService {
     }
 
     private ResumeVersionResponse mapToResponse(ResumeVersion version) {
-        int latestAtsScore = resolveAtsScore(
-                version.getUserEmail(),
-                version.getResumeId()
-        );
-
         return new ResumeVersionResponse(
                 version.getId(),
                 version.getResumeId(),
@@ -222,7 +235,7 @@ public class ResumeVersionService {
                 version.getExperienceBullets(),
                 version.getProjectBullets(),
                 version.getEducation(),
-                latestAtsScore,
+                version.getAtsScore(),
                 version.getCreatedAt()
         );
     }

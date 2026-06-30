@@ -233,7 +233,7 @@ public class ResumeBuilderService {
             versionRequest.setExperienceBullets(joinList(builderResponse.getExperienceBullets()));
             versionRequest.setProjectBullets(joinList(builderResponse.getProjectBullets()));
             versionRequest.setEducation(builderResponse.getEducationText());
-            versionRequest.setAtsScore(0);
+            versionRequest.setJobDescription(history.getJobDescription());
 
             return resumeVersionService.saveVersion(versionRequest, userEmail);
 

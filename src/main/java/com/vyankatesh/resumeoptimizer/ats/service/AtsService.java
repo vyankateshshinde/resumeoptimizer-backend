@@ -177,6 +177,7 @@ public class AtsService {
 
     private String normalize(String text) {
         if (text == null) return "";
+
         return text.toLowerCase()
                 .replace("reactjs", "react")
                 .replace("react.js", "react")

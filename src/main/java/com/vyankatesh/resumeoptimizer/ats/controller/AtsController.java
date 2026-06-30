@@ -1,6 +1,6 @@
 package com.vyankatesh.resumeoptimizer.ats.controller;
 
-import com.vyankatesh.resumeoptimizer.ats.dto.AtsHistoryResponse;
+import com.vyankatesh.resumeoptimizer.ats.dto.AiAtsHistoryResponse;
 import com.vyankatesh.resumeoptimizer.ats.dto.AtsRequest;
 import com.vyankatesh.resumeoptimizer.ats.dto.AtsResponse;
 import com.vyankatesh.resumeoptimizer.ats.service.AtsService;
@@ -54,7 +54,7 @@ public class AtsController {
     }
 
     @GetMapping("/history")
-    public List<AtsHistoryResponse> getHistory() {
+    public List<AiAtsHistoryResponse> getHistory() {
 
         Authentication auth =
                 SecurityContextHolder.getContext().getAuthentication();
@@ -71,7 +71,7 @@ public class AtsController {
     }
 
     @GetMapping("/history/latest/{resumeId}")
-    public AtsHistoryResponse getLatestHistory(
+    public AiAtsHistoryResponse getLatestHistory(
             @PathVariable Long resumeId
     ) {
 

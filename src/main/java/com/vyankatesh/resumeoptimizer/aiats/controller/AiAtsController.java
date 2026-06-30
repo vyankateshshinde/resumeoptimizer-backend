@@ -36,7 +36,10 @@ public class AiAtsController {
         return aiAtsService.analyzeResume(request);
     }
 
-    private void validateResumeOwnership(Long resumeId, Authentication authentication) {
+    private void validateResumeOwnership(
+            Long resumeId,
+            Authentication authentication
+    ) {
         if (resumeId == null) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,

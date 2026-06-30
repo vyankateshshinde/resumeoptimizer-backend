@@ -1,4 +1,3 @@
-
 package com.vyankatesh.resumeoptimizer.resumeversion.entity;
 
 import jakarta.persistence.*;
@@ -17,6 +16,10 @@ public class ResumeVersion {
     private String userEmail;
     private String versionName;
     private String templateName;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String jobDescription;
 
     @Lob
     @Column(columnDefinition = "LONGTEXT")
@@ -88,6 +91,14 @@ public class ResumeVersion {
 
     public void setTemplateName(String templateName) {
         this.templateName = templateName;
+    }
+
+    public String getJobDescription() {
+        return jobDescription;
+    }
+
+    public void setJobDescription(String jobDescription) {
+        this.jobDescription = jobDescription;
     }
 
     public String getFullResumeText() {
