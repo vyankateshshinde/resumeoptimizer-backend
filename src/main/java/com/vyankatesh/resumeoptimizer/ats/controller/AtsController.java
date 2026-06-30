@@ -1,6 +1,6 @@
 package com.vyankatesh.resumeoptimizer.ats.controller;
 
-import com.vyankatesh.resumeoptimizer.ats.dto.AiAtsHistoryResponse;
+import com.vyankatesh.resumeoptimizer.ats.dto.AtsHistoryResponse;
 import com.vyankatesh.resumeoptimizer.ats.dto.AtsRequest;
 import com.vyankatesh.resumeoptimizer.ats.dto.AtsResponse;
 import com.vyankatesh.resumeoptimizer.ats.service.AtsService;
@@ -26,7 +26,6 @@ public class AtsController {
             @PathVariable Long resumeId,
             @RequestBody AtsRequest request
     ) {
-
         Authentication auth =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -35,8 +34,6 @@ public class AtsController {
         }
 
         String email = auth.getName();
-
-        System.out.println("AUTH SET FOR EMAIL = " + email);
 
         ResumeEntity resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new RuntimeException("Resume not found"));
@@ -54,8 +51,7 @@ public class AtsController {
     }
 
     @GetMapping("/history")
-    public List<AiAtsHistoryResponse> getHistory() {
-
+    public List<AtsHistoryResponse> getHistory() {
         Authentication auth =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -63,18 +59,13 @@ public class AtsController {
             throw new RuntimeException("User not authenticated");
         }
 
-        String email = auth.getName();
-
-        System.out.println("AUTH SET FOR EMAIL = " + email);
-
-        return atsService.getHistory(email);
+        return atsService.getHistory(auth.getName());
     }
 
     @GetMapping("/history/latest/{resumeId}")
-    public AiAtsHistoryResponse getLatestHistory(
+    public AtsHistoryResponse getLatestHistory(
             @PathVariable Long resumeId
     ) {
-
         Authentication auth =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -82,11 +73,9 @@ public class AtsController {
             throw new RuntimeException("User not authenticated");
         }
 
-        String email = auth.getName();
-
-        System.out.println("AUTH SET FOR EMAIL = " + email);
-        System.out.println("RESUME ID = " + resumeId);
-
-        return atsService.getLatestHistory(email, resumeId);
+        return atsService.getLatestHistory(
+                auth.getName(),
+                resumeId
+        );
     }
 }
