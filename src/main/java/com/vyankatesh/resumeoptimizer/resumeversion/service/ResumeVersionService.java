@@ -1,5 +1,6 @@
 package com.vyankatesh.resumeoptimizer.resumeversion.service;
 
+import com.vyankatesh.resumeoptimizer.ats.repository.AtsHistoryRepository;
 import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeComparisonRequest;
 import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeComparisonResponse;
 import com.vyankatesh.resumeoptimizer.resumeversion.dto.ResumeVersionRequest;
@@ -17,13 +18,20 @@ import java.util.stream.Collectors;
 public class ResumeVersionService {
 
     private final ResumeVersionRepository resumeVersionRepository;
+    private final AtsHistoryRepository atsHistoryRepository;
 
-    public ResumeVersionService(ResumeVersionRepository resumeVersionRepository) {
+    public ResumeVersionService(
+            ResumeVersionRepository resumeVersionRepository,
+            AtsHistoryRepository atsHistoryRepository
+    ) {
         this.resumeVersionRepository = resumeVersionRepository;
+        this.atsHistoryRepository = atsHistoryRepository;
     }
 
-    public ResumeVersionResponse saveVersion(ResumeVersionRequest request, String userEmail) {
-
+    public ResumeVersionResponse saveVersion(
+            ResumeVersionRequest request,
+            String userEmail
+    ) {
         if (request.getResumeId() == null) {
             throw new RuntimeException("Resume ID is required");
         }
@@ -52,7 +60,10 @@ public class ResumeVersionService {
         version.setExperienceBullets(request.getExperienceBullets());
         version.setProjectBullets(request.getProjectBullets());
         version.setEducation(request.getEducation());
-        version.setAtsScore(request.getAtsScore());
+
+        // Always use the latest ATS analysis score for this user's uploaded resume.
+        // Never trust a score sent from frontend or request body.
+        version.setAtsScore(resolveAtsScore(userEmail, request.getResumeId()));
 
         ResumeVersion saved = resumeVersionRepository.save(version);
 
@@ -68,14 +79,18 @@ public class ResumeVersionService {
 
     public ResumeVersionResponse getVersionById(Long id) {
         ResumeVersion version = resumeVersionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Resume version not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(
+                        "Resume version not found with id: " + id
+                ));
 
         return mapToResponse(version);
     }
 
     public ResumeVersionResponse duplicateVersion(Long id) {
         ResumeVersion existing = resumeVersionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Resume version not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(
+                        "Resume version not found with id: " + id
+                ));
 
         ResumeVersion copy = new ResumeVersion();
 
@@ -89,15 +104,18 @@ public class ResumeVersionService {
         copy.setExperienceBullets(existing.getExperienceBullets());
         copy.setProjectBullets(existing.getProjectBullets());
         copy.setEducation(existing.getEducation());
-        copy.setAtsScore(existing.getAtsScore());
+        copy.setAtsScore(
+                resolveAtsScore(existing.getUserEmail(), existing.getResumeId())
+        );
 
         ResumeVersion savedCopy = resumeVersionRepository.save(copy);
 
         return mapToResponse(savedCopy);
     }
 
-    public ResumeComparisonResponse compareVersions(ResumeComparisonRequest request) {
-
+    public ResumeComparisonResponse compareVersions(
+            ResumeComparisonRequest request
+    ) {
         if (request.getVersionId1() == null || request.getVersionId2() == null) {
             throw new RuntimeException("Both version IDs are required");
         }
@@ -107,10 +125,14 @@ public class ResumeVersionService {
         }
 
         ResumeVersion version1 = resumeVersionRepository.findById(request.getVersionId1())
-                .orElseThrow(() -> new RuntimeException("Version 1 not found with id: " + request.getVersionId1()));
+                .orElseThrow(() -> new RuntimeException(
+                        "Version 1 not found with id: " + request.getVersionId1()
+                ));
 
         ResumeVersion version2 = resumeVersionRepository.findById(request.getVersionId2())
-                .orElseThrow(() -> new RuntimeException("Version 2 not found with id: " + request.getVersionId2()));
+                .orElseThrow(() -> new RuntimeException(
+                        "Version 2 not found with id: " + request.getVersionId2()
+                ));
 
         List<String> skills1 = splitSkills(version1.getSkills());
         List<String> skills2 = splitSkills(version2.getSkills());
@@ -121,13 +143,21 @@ public class ResumeVersionService {
         List<String> removedSkills = new ArrayList<>(skills1);
         removedSkills.removeAll(skills2);
 
-        int scoreDifference = version2.getAtsScore() - version1.getAtsScore();
+        int version1Score = resolveAtsScore(
+                version1.getUserEmail(),
+                version1.getResumeId()
+        );
+
+        int version2Score = resolveAtsScore(
+                version2.getUserEmail(),
+                version2.getResumeId()
+        );
 
         ResumeComparisonResponse response = new ResumeComparisonResponse();
 
         response.setVersion1Name(version1.getVersionName());
         response.setVersion2Name(version2.getVersionName());
-        response.setAtsScoreDifference(scoreDifference);
+        response.setAtsScoreDifference(version2Score - version1Score);
         response.setAddedSkills(addedSkills);
         response.setRemovedSkills(removedSkills);
 
@@ -136,7 +166,7 @@ public class ResumeVersionService {
                         + " with "
                         + version2.getVersionName()
                         + ". ATS score difference is "
-                        + scoreDifference
+                        + (version2Score - version1Score)
                         + "%."
         );
 
@@ -145,14 +175,26 @@ public class ResumeVersionService {
 
     public void deleteVersion(Long id) {
         if (!resumeVersionRepository.existsById(id)) {
-            throw new RuntimeException("Resume version not found with id: " + id);
+            throw new RuntimeException(
+                    "Resume version not found with id: " + id
+            );
         }
 
         resumeVersionRepository.deleteById(id);
     }
 
-    private List<String> splitSkills(String skills) {
+    private int resolveAtsScore(String userEmail, Long resumeId) {
+        if (userEmail == null || userEmail.isBlank() || resumeId == null) {
+            return 0;
+        }
 
+        return atsHistoryRepository
+                .findTopByEmailAndResumeIdOrderByCreatedAtDesc(userEmail, resumeId)
+                .map(history -> Math.max(0, Math.min(100, history.getFinalScore())))
+                .orElse(0);
+    }
+
+    private List<String> splitSkills(String skills) {
         if (skills == null || skills.isBlank()) {
             return new ArrayList<>();
         }
@@ -164,6 +206,11 @@ public class ResumeVersionService {
     }
 
     private ResumeVersionResponse mapToResponse(ResumeVersion version) {
+        int latestAtsScore = resolveAtsScore(
+                version.getUserEmail(),
+                version.getResumeId()
+        );
+
         return new ResumeVersionResponse(
                 version.getId(),
                 version.getResumeId(),
@@ -175,7 +222,7 @@ public class ResumeVersionService {
                 version.getExperienceBullets(),
                 version.getProjectBullets(),
                 version.getEducation(),
-                version.getAtsScore(),
+                latestAtsScore,
                 version.getCreatedAt()
         );
     }
