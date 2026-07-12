@@ -44,16 +44,19 @@ public class ResumeVersionService {
 
         version.setResumeId(request.getResumeId());
         version.setUserEmail(userEmail);
+
         version.setVersionName(
                 request.getVersionName() == null || request.getVersionName().isBlank()
                         ? "Untitled Resume Version"
                         : request.getVersionName()
         );
+
         version.setTemplateName(
                 request.getTemplateName() == null || request.getTemplateName().isBlank()
                         ? "ATS Professional"
                         : request.getTemplateName()
         );
+
         version.setJobDescription(normalizeJobDescription(request.getJobDescription()));
         version.setFullResumeText(request.getFullResumeText());
         version.setProfessionalSummary(request.getProfessionalSummary());
@@ -76,8 +79,33 @@ public class ResumeVersionService {
     }
 
     public List<ResumeVersionResponse> getUserVersions(String userEmail) {
-        return resumeVersionRepository.findByUserEmailOrderByCreatedAtDesc(userEmail)
-                .stream()
+        List<ResumeVersion> versions =
+                resumeVersionRepository.findByUserEmailOrderByCreatedAtDesc(userEmail);
+
+        boolean updated = false;
+
+        for (ResumeVersion version : versions) {
+            if (version.getAtsScore() > 0) {
+                continue;
+            }
+
+            int resolvedScore = resolveAtsScore(
+                    userEmail,
+                    version.getResumeId(),
+                    version.getJobDescription()
+            );
+
+            if (resolvedScore > 0) {
+                version.setAtsScore(resolvedScore);
+                updated = true;
+            }
+        }
+
+        if (updated) {
+            versions = resumeVersionRepository.saveAll(versions);
+        }
+
+        return versions.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
