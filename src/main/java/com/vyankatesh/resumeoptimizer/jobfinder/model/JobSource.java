@@ -1,4 +1,10 @@
 package com.vyankatesh.resumeoptimizer.jobfinder.model;
 
-public class JobSource {
+public enum JobSource {
+    COMPANY_CAREER,
+    LINKEDIN,
+    NAUKRI,
+    INDEED,
+    OTHER,
+    MOCK
 }

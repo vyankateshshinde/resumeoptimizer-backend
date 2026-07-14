@@ -16,8 +16,13 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
-public record JobFinderSearchRequest(
-        @NotNull Long resumeId,
+public record JobSearchPreferenceRequest(
+        @NotBlank
+        @Size(max = 100)
+        String name,
+
+        @NotNull
+        Long resumeId,
 
         @NotEmpty
         @Size(max = 5)
@@ -47,13 +52,6 @@ public record JobFinderSearchRequest(
         @Max(100)
         Integer minimumMatchPercentage,
 
-        JobSortOption sortBy,
-
-        @Min(0)
-        Integer page,
-
-        @Min(1)
-        @Max(50)
-        Integer size
+        JobSortOption sortBy
 ) {
 }

@@ -1,4 +1,4 @@
-package com.vyankatesh.resumeoptimizer.jobfinder.dto.response;
+package com.vyankatesh.resumeoptimizer.jobfinder.provider;
 
 import com.vyankatesh.resumeoptimizer.jobfinder.model.EmploymentType;
 import com.vyankatesh.resumeoptimizer.jobfinder.model.JobSource;
@@ -7,8 +7,7 @@ import com.vyankatesh.resumeoptimizer.jobfinder.model.WorkArrangement;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record JobDetailsResponse(
-        Long jobId,
+public record ExternalJobRecord(
         String externalId,
         String title,
         String company,
@@ -22,7 +21,6 @@ public record JobDetailsResponse(
         String salaryCurrency,
         String description,
         LocalDateTime postedAt,
-        LocalDateTime fetchedAt,
         JobSource source,
         String sourceName,
         String applyUrl
