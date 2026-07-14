@@ -3,6 +3,7 @@ package com.vyankatesh.resumeoptimizer.jobfinder.provider;
 import com.vyankatesh.resumeoptimizer.jobfinder.model.EmploymentType;
 import com.vyankatesh.resumeoptimizer.jobfinder.model.JobSource;
 import com.vyankatesh.resumeoptimizer.jobfinder.model.WorkArrangement;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -10,6 +11,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
+@ConditionalOnProperty(
+        prefix = "jobfinder.mock",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 public class MockJobSourceProvider implements JobSourceProvider {
 
     @Override
@@ -18,7 +25,9 @@ public class MockJobSourceProvider implements JobSourceProvider {
     }
 
     @Override
-    public List<ExternalJobRecord> fetchJobs(LocalDateTime postedAfter) {
+    public List<ExternalJobRecord> fetchJobs(
+            LocalDateTime postedAfter
+    ) {
         LocalDateTime now = LocalDateTime.now();
 
         List<ExternalJobRecord> jobs = List.of(
@@ -133,7 +142,14 @@ public class MockJobSourceProvider implements JobSourceProvider {
         );
 
         return jobs.stream()
-                .filter(job -> job.postedAt() != null && !job.postedAt().isBefore(postedAfter))
+                .filter(job ->
+                        job.postedAt() != null
+                                && (
+                                postedAfter == null
+                                        || !job.postedAt()
+                                        .isBefore(postedAfter)
+                        )
+                )
                 .toList();
     }
 }

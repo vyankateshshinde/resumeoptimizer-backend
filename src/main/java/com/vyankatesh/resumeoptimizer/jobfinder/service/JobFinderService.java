@@ -33,9 +33,16 @@ public class JobFinderService {
     private static final int MAXIMUM_CANDIDATES = 300;
 
     private final ResumeRepository resumeRepository;
+
     private final JobListingRepository jobListingRepository;
+
     private final JobCatalogService jobCatalogService;
+
     private final JobMatchingService jobMatchingService;
+
+    private final ExperienceEligibilityService
+            experienceEligibilityService;
+
     private final JobFinderMapper mapper;
 
     public JobFinderService(
@@ -43,45 +50,106 @@ public class JobFinderService {
             JobListingRepository jobListingRepository,
             JobCatalogService jobCatalogService,
             JobMatchingService jobMatchingService,
+            ExperienceEligibilityService experienceEligibilityService,
             JobFinderMapper mapper
     ) {
-        this.resumeRepository = resumeRepository;
-        this.jobListingRepository = jobListingRepository;
-        this.jobCatalogService = jobCatalogService;
-        this.jobMatchingService = jobMatchingService;
-        this.mapper = mapper;
+        this.resumeRepository =
+                resumeRepository;
+
+        this.jobListingRepository =
+                jobListingRepository;
+
+        this.jobCatalogService =
+                jobCatalogService;
+
+        this.jobMatchingService =
+                jobMatchingService;
+
+        this.experienceEligibilityService =
+                experienceEligibilityService;
+
+        this.mapper =
+                mapper;
     }
 
     public JobFinderSearchResponse search(
             JobFinderSearchRequest request,
             String userEmail
     ) {
-        ResumeEntity resume = getOwnedResume(request.resumeId(), userEmail);
-        JobSearchCriteria criteria = toCriteria(request);
+        ResumeEntity resume =
+                getOwnedResume(
+                        request.resumeId(),
+                        userEmail
+                );
 
-        List<ScoredJob> scoredJobs = scoreCandidates(
-                resume.getExtractedText(),
-                criteria,
-                MAXIMUM_CANDIDATES
+        JobSearchCriteria criteria =
+                toCriteria(request);
+
+        List<ScoredJob> scoredJobs =
+                scoreCandidates(
+                        resume.getExtractedText(),
+                        criteria,
+                        MAXIMUM_CANDIDATES
+                );
+
+        sort(
+                scoredJobs,
+                criteria.sortOption()
         );
 
-        sort(scoredJobs, criteria.sortOption());
+        int page =
+                request.page() == null
+                        ? 0
+                        : Math.max(
+                        0,
+                        request.page()
+                );
 
-        int page = request.page() == null ? 0 : request.page();
-        int size = request.size() == null ? 20 : request.size();
-        int fromIndex = Math.min(page * size, scoredJobs.size());
-        int toIndex = Math.min(fromIndex + size, scoredJobs.size());
+        int size =
+                request.size() == null
+                        ? 20
+                        : Math.max(
+                        1,
+                        Math.min(
+                                request.size(),
+                                100
+                        )
+                );
 
-        List<JobMatchResponse> jobs = scoredJobs.subList(fromIndex, toIndex).stream()
-                .map(scoredJob -> mapper.toMatchResponse(
-                        scoredJob.job(),
-                        scoredJob.match()
-                ))
-                .toList();
+        int fromIndex =
+                Math.min(
+                        page * size,
+                        scoredJobs.size()
+                );
 
-        int totalPages = scoredJobs.isEmpty()
-                ? 0
-                : (int) Math.ceil(scoredJobs.size() / (double) size);
+        int toIndex =
+                Math.min(
+                        fromIndex + size,
+                        scoredJobs.size()
+                );
+
+        List<JobMatchResponse> jobs =
+                scoredJobs
+                        .subList(
+                                fromIndex,
+                                toIndex
+                        )
+                        .stream()
+                        .map(scoredJob ->
+                                mapper.toMatchResponse(
+                                        scoredJob.job(),
+                                        scoredJob.match()
+                                )
+                        )
+                        .toList();
+
+        int totalPages =
+                scoredJobs.isEmpty()
+                        ? 0
+                        : (int) Math.ceil(
+                        scoredJobs.size()
+                                / (double) size
+                );
 
         return new JobFinderSearchResponse(
                 scoredJobs.size(),
@@ -93,13 +161,21 @@ public class JobFinderService {
         );
     }
 
-    public JobDetailsResponse getJobDetails(Long jobId) {
-        JobListingEntity job = jobListingRepository.findById(jobId)
-                .filter(JobListingEntity::isActive)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Job listing not found"
-                ));
+    public JobDetailsResponse getJobDetails(
+            Long jobId
+    ) {
+        JobListingEntity job =
+                jobListingRepository
+                        .findById(jobId)
+                        .filter(
+                                JobListingEntity::isActive
+                        )
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Job listing not found"
+                                )
+                        );
 
         return mapper.toDetailsResponse(job);
     }
@@ -109,37 +185,76 @@ public class JobFinderService {
             JobSearchCriteria criteria,
             int maximumCandidates
     ) {
-        List<JobListingEntity> candidates = jobCatalogService.findCandidates(
-                criteria,
-                maximumCandidates
-        );
+        List<JobListingEntity> candidates =
+                jobCatalogService.findCandidates(
+                        criteria,
+                        maximumCandidates
+                );
 
-        List<ScoredJob> scoredJobs = new ArrayList<>();
+        List<ScoredJob> scoredJobs =
+                new ArrayList<>();
 
         for (JobListingEntity job : candidates) {
-            JobMatchResult match = jobMatchingService.calculateMatch(
-                    resumeText,
-                    criteria,
-                    job
-            );
 
-            if (match.overallScore() >= criteria.minimumMatchPercentage()) {
-                scoredJobs.add(new ScoredJob(job, match));
+            /*
+             * Strict eligibility check.
+             *
+             * A job is rejected before match scoring when:
+             * - experience type is REQUIRED
+             * - minimum experience is known
+             * - candidate experience is below the minimum
+             */
+            ExperienceEligibilityService
+                    .ExperienceEligibility eligibility =
+                    experienceEligibilityService.evaluate(
+                            criteria.experienceYears(),
+                            job
+                    );
+
+            if (!eligibility.eligible()) {
+                continue;
+            }
+
+            JobMatchResult match =
+                    jobMatchingService.calculateMatch(
+                            resumeText,
+                            criteria,
+                            job
+                    );
+
+            if (match.overallScore()
+                    >= criteria.minimumMatchPercentage()) {
+
+                scoredJobs.add(
+                        new ScoredJob(
+                                job,
+                                match
+                        )
+                );
             }
         }
 
         return scoredJobs;
     }
 
-    public ResumeEntity getOwnedResume(Long resumeId, String userEmail) {
-        ResumeEntity resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Resume not found"
-                ));
+    public ResumeEntity getOwnedResume(
+            Long resumeId,
+            String userEmail
+    ) {
+        ResumeEntity resume =
+                resumeRepository
+                        .findById(resumeId)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Resume not found"
+                                )
+                        );
 
         if (resume.getEmail() == null
-                || !resume.getEmail().equalsIgnoreCase(userEmail)) {
+                || !resume.getEmail()
+                .equalsIgnoreCase(userEmail)) {
+
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "You cannot use another user's resume"
@@ -147,7 +262,9 @@ public class JobFinderService {
         }
 
         if (resume.getExtractedText() == null
-                || resume.getExtractedText().isBlank()) {
+                || resume.getExtractedText()
+                .isBlank()) {
+
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Selected resume does not contain extracted text"
@@ -157,75 +274,170 @@ public class JobFinderService {
         return resume;
     }
 
-    public JobSearchCriteria toCriteria(JobFinderSearchRequest request) {
-        int postedWithinDays = request.postedWithinDays() == null
-                ? 7
-                : request.postedWithinDays();
+    public JobSearchCriteria toCriteria(
+            JobFinderSearchRequest request
+    ) {
+        int postedWithinDays =
+                request.postedWithinDays() == null
+                        ? 7
+                        : Math.max(
+                        1,
+                        request.postedWithinDays()
+                );
+
+        BigDecimal experienceYears =
+                request.experienceYears();
+
+        if (experienceYears != null
+                && experienceYears.compareTo(
+                BigDecimal.ZERO
+        ) < 0) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Experience years cannot be negative"
+            );
+        }
 
         return new JobSearchCriteria(
-                normalizeStrings(request.jobTitles(), 5),
-                normalizeStrings(request.locations(), 10),
-                safeWorkArrangements(request.workArrangements()),
-                safeEmploymentTypes(request.employmentTypes()),
-                request.experienceYears(),
+                normalizeStrings(
+                        request.jobTitles(),
+                        5
+                ),
+                normalizeStrings(
+                        request.locations(),
+                        10
+                ),
+                safeWorkArrangements(
+                        request.workArrangements()
+                ),
+                safeEmploymentTypes(
+                        request.employmentTypes()
+                ),
+                experienceYears,
                 request.minimumSalary(),
-                LocalDateTime.now().minusDays(postedWithinDays),
+                LocalDateTime.now()
+                        .minusDays(
+                                postedWithinDays
+                        ),
                 request.sortBy() == null
                         ? JobSortOption.BEST_MATCH
                         : request.sortBy(),
                 request.minimumMatchPercentage() == null
                         ? 0
-                        : request.minimumMatchPercentage()
+                        : Math.max(
+                        0,
+                        Math.min(
+                                request.minimumMatchPercentage(),
+                                100
+                        )
+                )
         );
     }
 
-    public void sort(List<ScoredJob> scoredJobs, JobSortOption option) {
-        Comparator<ScoredJob> comparator = switch (option) {
-            case NEWEST -> Comparator.comparing(
-                    scoredJob -> scoredJob.job().getPostedAt(),
-                    Comparator.nullsLast(Comparator.reverseOrder())
-            );
-            case SALARY_HIGH_TO_LOW -> Comparator.comparing(
-                    scoredJob -> salaryForSorting(scoredJob.job()),
-                    Comparator.nullsLast(Comparator.reverseOrder())
-            );
-            case EXPERIENCE_LOW_TO_HIGH -> Comparator.comparing(
-                    scoredJob -> scoredJob.job().getMinimumExperience(),
-                    Comparator.nullsLast(Comparator.naturalOrder())
-            );
-            case BEST_MATCH -> Comparator.comparingInt(
-                    (ScoredJob scoredJob) -> scoredJob.match().overallScore()
-            ).reversed().thenComparing(
-                    (ScoredJob scoredJob) -> scoredJob.job().getPostedAt(),
-                    Comparator.nullsLast(Comparator.reverseOrder())
-            );
-        };
+    public void sort(
+            List<ScoredJob> scoredJobs,
+            JobSortOption option
+    ) {
+        JobSortOption selectedOption =
+                option == null
+                        ? JobSortOption.BEST_MATCH
+                        : option;
+
+        Comparator<ScoredJob> comparator =
+                switch (selectedOption) {
+
+                    case NEWEST ->
+                            Comparator.comparing(
+                                    scoredJob ->
+                                            scoredJob
+                                                    .job()
+                                                    .getPostedAt(),
+                                    Comparator.nullsLast(
+                                            Comparator.reverseOrder()
+                                    )
+                            );
+
+                    case SALARY_HIGH_TO_LOW ->
+                            Comparator.comparing(
+                                    scoredJob ->
+                                            salaryForSorting(
+                                                    scoredJob.job()
+                                            ),
+                                    Comparator.nullsLast(
+                                            Comparator.reverseOrder()
+                                    )
+                            );
+
+                    case EXPERIENCE_LOW_TO_HIGH ->
+                            Comparator.comparing(
+                                    scoredJob ->
+                                            scoredJob
+                                                    .job()
+                                                    .getMinimumExperience(),
+                                    Comparator.nullsLast(
+                                            Comparator.naturalOrder()
+                                    )
+                            );
+
+                    case BEST_MATCH ->
+                            Comparator.comparingInt(
+                                            (ScoredJob scoredJob) ->
+                                                    scoredJob
+                                                            .match()
+                                                            .overallScore()
+                                    )
+                                    .reversed()
+                                    .thenComparing(
+                                            scoredJob ->
+                                                    scoredJob
+                                                            .job()
+                                                            .getPostedAt(),
+                                            Comparator.nullsLast(
+                                                    Comparator.reverseOrder()
+                                            )
+                                    );
+                };
 
         scoredJobs.sort(comparator);
     }
 
-    private BigDecimal salaryForSorting(JobListingEntity job) {
+    private BigDecimal salaryForSorting(
+            JobListingEntity job
+    ) {
         if (job.getMaximumSalary() != null) {
             return job.getMaximumSalary();
         }
+
         return job.getMinimumSalary();
     }
 
-    private List<String> normalizeStrings(List<String> values, int limit) {
+    private List<String> normalizeStrings(
+            List<String> values,
+            int limit
+    ) {
         if (values == null) {
             return List.of();
         }
 
-        LinkedHashSet<String> uniqueValues = new LinkedHashSet<>();
+        LinkedHashSet<String> uniqueValues =
+                new LinkedHashSet<>();
 
         for (String value : values) {
-            if (value == null || value.isBlank()) {
+            if (value == null
+                    || value.isBlank()) {
                 continue;
             }
 
-            String normalized = value.trim()
-                    .replaceAll("\\s+", " ")
-                    .toLowerCase(Locale.ROOT);
+            String normalized =
+                    value.trim()
+                            .replaceAll(
+                                    "\\s+",
+                                    " "
+                            )
+                            .toLowerCase(
+                                    Locale.ROOT
+                            );
 
             uniqueValues.add(normalized);
 
@@ -237,16 +449,22 @@ public class JobFinderService {
         return List.copyOf(uniqueValues);
     }
 
-    private Set<WorkArrangement> safeWorkArrangements(
+    private Set<WorkArrangement>
+    safeWorkArrangements(
             Set<WorkArrangement> values
     ) {
-        return values == null ? Set.of() : Set.copyOf(values);
+        return values == null
+                ? Set.of()
+                : Set.copyOf(values);
     }
 
-    private Set<EmploymentType> safeEmploymentTypes(
+    private Set<EmploymentType>
+    safeEmploymentTypes(
             Set<EmploymentType> values
     ) {
-        return values == null ? Set.of() : Set.copyOf(values);
+        return values == null
+                ? Set.of()
+                : Set.copyOf(values);
     }
 
     public record ScoredJob(

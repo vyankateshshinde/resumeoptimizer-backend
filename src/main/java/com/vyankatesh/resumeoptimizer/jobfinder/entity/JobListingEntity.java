@@ -1,6 +1,7 @@
 package com.vyankatesh.resumeoptimizer.jobfinder.entity;
 
 import com.vyankatesh.resumeoptimizer.jobfinder.model.EmploymentType;
+import com.vyankatesh.resumeoptimizer.jobfinder.model.ExperienceRequirementType;
 import com.vyankatesh.resumeoptimizer.jobfinder.model.JobSource;
 import com.vyankatesh.resumeoptimizer.jobfinder.model.WorkArrangement;
 import jakarta.persistence.Column;
@@ -25,13 +26,36 @@ import java.time.LocalDateTime;
         name = "job_listings",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_job_source_external_id",
-                columnNames = {"source", "external_id"}
+                columnNames = {
+                        "source",
+                        "external_id"
+                }
         ),
         indexes = {
-                @Index(name = "idx_job_active_posted", columnList = "active, posted_at"),
-                @Index(name = "idx_job_title", columnList = "title"),
-                @Index(name = "idx_job_location", columnList = "location"),
-                @Index(name = "idx_job_work_arrangement", columnList = "work_arrangement")
+                @Index(
+                        name = "idx_job_active_posted",
+                        columnList = "active, posted_at"
+                ),
+                @Index(
+                        name = "idx_job_title",
+                        columnList = "title"
+                ),
+                @Index(
+                        name = "idx_job_location",
+                        columnList = "location"
+                ),
+                @Index(
+                        name = "idx_job_work_arrangement",
+                        columnList = "work_arrangement"
+                ),
+                @Index(
+                        name = "idx_job_experience",
+                        columnList = "minimum_experience, maximum_experience"
+                ),
+                @Index(
+                        name = "idx_job_experience_type",
+                        columnList = "experience_requirement_type"
+                )
         }
 )
 public class JobListingEntity {
@@ -40,85 +64,215 @@ public class JobListingEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "external_id", nullable = false, length = 255)
+    @Column(
+            name = "external_id",
+            nullable = false,
+            length = 255
+    )
     private String externalId;
 
-    @Column(nullable = false, length = 180)
+    @Column(
+            nullable = false,
+            length = 180
+    )
     private String title;
 
-    @Column(nullable = false, length = 180)
+    @Column(
+            nullable = false,
+            length = 180
+    )
     private String company;
 
     @Column(length = 180)
     private String location;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "work_arrangement", nullable = false, length = 30)
-    private WorkArrangement workArrangement = WorkArrangement.UNSPECIFIED;
+    @Column(
+            name = "work_arrangement",
+            nullable = false,
+            length = 30
+    )
+    private WorkArrangement workArrangement =
+            WorkArrangement.UNSPECIFIED;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "employment_type", nullable = false, length = 30)
-    private EmploymentType employmentType = EmploymentType.OTHER;
+    @Column(
+            name = "employment_type",
+            nullable = false,
+            length = 30
+    )
+    private EmploymentType employmentType =
+            EmploymentType.OTHER;
 
-    @Column(name = "minimum_experience", precision = 5, scale = 2)
+    @Column(
+            name = "minimum_experience",
+            precision = 5,
+            scale = 2
+    )
     private BigDecimal minimumExperience;
 
-    @Column(name = "maximum_experience", precision = 5, scale = 2)
+    @Column(
+            name = "maximum_experience",
+            precision = 5,
+            scale = 2
+    )
     private BigDecimal maximumExperience;
 
-    @Column(name = "minimum_salary", precision = 15, scale = 2)
+    @Enumerated(EnumType.STRING)
+    @Column(
+            name = "experience_requirement_type",
+            length = 30
+    )
+    private ExperienceRequirementType experienceRequirementType =
+            ExperienceRequirementType.NOT_SPECIFIED;
+
+    @Lob
+    @Column(
+            name = "experience_evidence",
+            columnDefinition = "TEXT"
+    )
+    private String experienceEvidence;
+
+    @Column(
+            name = "experience_confidence",
+            precision = 5,
+            scale = 4
+    )
+    private BigDecimal experienceConfidence;
+
+    @Column(
+            name = "experience_extraction_method",
+            length = 30
+    )
+    private String experienceExtractionMethod =
+            "NOT_PROCESSED";
+
+    @Column(
+            name = "minimum_salary",
+            precision = 15,
+            scale = 2
+    )
     private BigDecimal minimumSalary;
 
-    @Column(name = "maximum_salary", precision = 15, scale = 2)
+    @Column(
+            name = "maximum_salary",
+            precision = 15,
+            scale = 2
+    )
     private BigDecimal maximumSalary;
 
-    @Column(name = "salary_currency", length = 10)
+    @Column(
+            name = "salary_currency",
+            length = 10
+    )
     private String salaryCurrency;
 
     @Lob
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
+    @Column(
+            nullable = false,
+            columnDefinition = "LONGTEXT"
+    )
     private String description;
 
-    @Column(name = "posted_at", nullable = false)
+    @Column(
+            name = "posted_at",
+            nullable = false
+    )
     private LocalDateTime postedAt;
 
-    @Column(name = "fetched_at", nullable = false)
+    @Column(
+            name = "fetched_at",
+            nullable = false
+    )
     private LocalDateTime fetchedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 40)
+    @Column(
+            nullable = false,
+            length = 40
+    )
     private JobSource source;
 
-    @Column(name = "source_name", nullable = false, length = 100)
+    @Column(
+            name = "source_name",
+            nullable = false,
+            length = 100
+    )
     private String sourceName;
 
-    @Column(name = "apply_url", nullable = false, length = 2048)
+    @Column(
+            name = "apply_url",
+            nullable = false,
+            length = 2048
+    )
     private String applyUrl;
 
     @Column(nullable = false)
     private boolean active = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(
+            name = "created_at",
+            nullable = false,
+            updatable = false
+    )
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(
+            name = "updated_at",
+            nullable = false
+    )
     private LocalDateTime updatedAt;
 
     @PrePersist
     public void onCreate() {
         LocalDateTime now = LocalDateTime.now();
+
         if (postedAt == null) {
             postedAt = now;
         }
+
         if (fetchedAt == null) {
             fetchedAt = now;
         }
+
+        if (workArrangement == null) {
+            workArrangement =
+                    WorkArrangement.UNSPECIFIED;
+        }
+
+        if (employmentType == null) {
+            employmentType =
+                    EmploymentType.OTHER;
+        }
+
+        if (experienceRequirementType == null) {
+            experienceRequirementType =
+                    ExperienceRequirementType.NOT_SPECIFIED;
+        }
+
+        if (experienceExtractionMethod == null
+                || experienceExtractionMethod.isBlank()) {
+            experienceExtractionMethod =
+                    "NOT_PROCESSED";
+        }
+
         createdAt = now;
         updatedAt = now;
     }
 
     @PreUpdate
     public void onUpdate() {
+        if (experienceRequirementType == null) {
+            experienceRequirementType =
+                    ExperienceRequirementType.NOT_SPECIFIED;
+        }
+
+        if (experienceExtractionMethod == null
+                || experienceExtractionMethod.isBlank()) {
+            experienceExtractionMethod =
+                    "NOT_PROCESSED";
+        }
+
         updatedAt = LocalDateTime.now();
     }
 
@@ -162,7 +316,9 @@ public class JobListingEntity {
         return workArrangement;
     }
 
-    public void setWorkArrangement(WorkArrangement workArrangement) {
+    public void setWorkArrangement(
+            WorkArrangement workArrangement
+    ) {
         this.workArrangement = workArrangement;
     }
 
@@ -170,7 +326,9 @@ public class JobListingEntity {
         return employmentType;
     }
 
-    public void setEmploymentType(EmploymentType employmentType) {
+    public void setEmploymentType(
+            EmploymentType employmentType
+    ) {
         this.employmentType = employmentType;
     }
 
@@ -178,7 +336,9 @@ public class JobListingEntity {
         return minimumExperience;
     }
 
-    public void setMinimumExperience(BigDecimal minimumExperience) {
+    public void setMinimumExperience(
+            BigDecimal minimumExperience
+    ) {
         this.minimumExperience = minimumExperience;
     }
 
@@ -186,15 +346,64 @@ public class JobListingEntity {
         return maximumExperience;
     }
 
-    public void setMaximumExperience(BigDecimal maximumExperience) {
+    public void setMaximumExperience(
+            BigDecimal maximumExperience
+    ) {
         this.maximumExperience = maximumExperience;
+    }
+
+    public ExperienceRequirementType
+    getExperienceRequirementType() {
+        return experienceRequirementType;
+    }
+
+    public void setExperienceRequirementType(
+            ExperienceRequirementType experienceRequirementType
+    ) {
+        this.experienceRequirementType =
+                experienceRequirementType;
+    }
+
+    public String getExperienceEvidence() {
+        return experienceEvidence;
+    }
+
+    public void setExperienceEvidence(
+            String experienceEvidence
+    ) {
+        this.experienceEvidence =
+                experienceEvidence;
+    }
+
+    public BigDecimal getExperienceConfidence() {
+        return experienceConfidence;
+    }
+
+    public void setExperienceConfidence(
+            BigDecimal experienceConfidence
+    ) {
+        this.experienceConfidence =
+                experienceConfidence;
+    }
+
+    public String getExperienceExtractionMethod() {
+        return experienceExtractionMethod;
+    }
+
+    public void setExperienceExtractionMethod(
+            String experienceExtractionMethod
+    ) {
+        this.experienceExtractionMethod =
+                experienceExtractionMethod;
     }
 
     public BigDecimal getMinimumSalary() {
         return minimumSalary;
     }
 
-    public void setMinimumSalary(BigDecimal minimumSalary) {
+    public void setMinimumSalary(
+            BigDecimal minimumSalary
+    ) {
         this.minimumSalary = minimumSalary;
     }
 
@@ -202,7 +411,9 @@ public class JobListingEntity {
         return maximumSalary;
     }
 
-    public void setMaximumSalary(BigDecimal maximumSalary) {
+    public void setMaximumSalary(
+            BigDecimal maximumSalary
+    ) {
         this.maximumSalary = maximumSalary;
     }
 
@@ -210,7 +421,9 @@ public class JobListingEntity {
         return salaryCurrency;
     }
 
-    public void setSalaryCurrency(String salaryCurrency) {
+    public void setSalaryCurrency(
+            String salaryCurrency
+    ) {
         this.salaryCurrency = salaryCurrency;
     }
 
@@ -218,7 +431,9 @@ public class JobListingEntity {
         return description;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(
+            String description
+    ) {
         this.description = description;
     }
 
@@ -226,7 +441,9 @@ public class JobListingEntity {
         return postedAt;
     }
 
-    public void setPostedAt(LocalDateTime postedAt) {
+    public void setPostedAt(
+            LocalDateTime postedAt
+    ) {
         this.postedAt = postedAt;
     }
 
@@ -234,7 +451,9 @@ public class JobListingEntity {
         return fetchedAt;
     }
 
-    public void setFetchedAt(LocalDateTime fetchedAt) {
+    public void setFetchedAt(
+            LocalDateTime fetchedAt
+    ) {
         this.fetchedAt = fetchedAt;
     }
 
@@ -242,7 +461,9 @@ public class JobListingEntity {
         return source;
     }
 
-    public void setSource(JobSource source) {
+    public void setSource(
+            JobSource source
+    ) {
         this.source = source;
     }
 
@@ -250,7 +471,9 @@ public class JobListingEntity {
         return sourceName;
     }
 
-    public void setSourceName(String sourceName) {
+    public void setSourceName(
+            String sourceName
+    ) {
         this.sourceName = sourceName;
     }
 
@@ -258,7 +481,9 @@ public class JobListingEntity {
         return applyUrl;
     }
 
-    public void setApplyUrl(String applyUrl) {
+    public void setApplyUrl(
+            String applyUrl
+    ) {
         this.applyUrl = applyUrl;
     }
 
@@ -266,7 +491,9 @@ public class JobListingEntity {
         return active;
     }
 
-    public void setActive(boolean active) {
+    public void setActive(
+            boolean active
+    ) {
         this.active = active;
     }
 

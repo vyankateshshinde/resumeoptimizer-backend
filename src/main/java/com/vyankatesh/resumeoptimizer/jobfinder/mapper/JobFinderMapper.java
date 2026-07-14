@@ -28,8 +28,14 @@ public class JobFinderMapper {
                 job.getLocation(),
                 job.getWorkArrangement(),
                 job.getEmploymentType(),
+
                 job.getMinimumExperience(),
                 job.getMaximumExperience(),
+                job.getExperienceRequirementType(),
+                job.getExperienceEvidence(),
+                job.getExperienceConfidence(),
+                job.getExperienceExtractionMethod(),
+
                 job.getMinimumSalary(),
                 job.getMaximumSalary(),
                 job.getSalaryCurrency(),
@@ -37,19 +43,26 @@ public class JobFinderMapper {
                 job.getSource(),
                 job.getSourceName(),
                 job.getApplyUrl(),
-                preview(job.getDescription(), 280),
+                preview(
+                        job.getDescription(),
+                        280
+                ),
+
                 match.overallScore(),
                 match.resumeScore(),
                 match.titleScore(),
                 match.experienceScore(),
                 match.freshnessScore(),
+
                 match.matchedSkills(),
                 match.missingSkills(),
                 match.explanation()
         );
     }
 
-    public JobDetailsResponse toDetailsResponse(JobListingEntity job) {
+    public JobDetailsResponse toDetailsResponse(
+            JobListingEntity job
+    ) {
         return new JobDetailsResponse(
                 job.getId(),
                 job.getExternalId(),
@@ -58,8 +71,14 @@ public class JobFinderMapper {
                 job.getLocation(),
                 job.getWorkArrangement(),
                 job.getEmploymentType(),
+
                 job.getMinimumExperience(),
                 job.getMaximumExperience(),
+                job.getExperienceRequirementType(),
+                job.getExperienceEvidence(),
+                job.getExperienceConfidence(),
+                job.getExperienceExtractionMethod(),
+
                 job.getMinimumSalary(),
                 job.getMaximumSalary(),
                 job.getSalaryCurrency(),
@@ -79,10 +98,18 @@ public class JobFinderMapper {
                 preference.getId(),
                 preference.getName(),
                 preference.getResumeId(),
-                ListCopy.of(preference.getJobTitles()),
-                ListCopy.of(preference.getLocations()),
-                SetCopy.of(preference.getWorkArrangements()),
-                SetCopy.of(preference.getEmploymentTypes()),
+                ListCopy.of(
+                        preference.getJobTitles()
+                ),
+                ListCopy.of(
+                        preference.getLocations()
+                ),
+                SetCopy.of(
+                        preference.getWorkArrangements()
+                ),
+                SetCopy.of(
+                        preference.getEmploymentTypes()
+                ),
                 preference.getExperienceYears(),
                 preference.getPostedWithinDays(),
                 preference.getMinimumSalary(),
@@ -93,8 +120,11 @@ public class JobFinderMapper {
         );
     }
 
-    public SavedJobResponse toSavedJobResponse(SavedJobEntity savedJob) {
-        JobListingEntity job = savedJob.getJobListing();
+    public SavedJobResponse toSavedJobResponse(
+            SavedJobEntity savedJob
+    ) {
+        JobListingEntity job =
+                savedJob.getJobListing();
 
         return new SavedJobResponse(
                 savedJob.getId(),
@@ -110,10 +140,14 @@ public class JobFinderMapper {
         );
     }
 
-    public JobAlertResponse toAlertResponse(JobAlertSubscriptionEntity alert) {
+    public JobAlertResponse toAlertResponse(
+            JobAlertSubscriptionEntity alert
+    ) {
         return new JobAlertResponse(
                 alert.getId(),
-                toPreferenceResponse(alert.getPreference()),
+                toPreferenceResponse(
+                        alert.getPreference()
+                ),
                 alert.isEnabled(),
                 alert.getLastCheckedAt(),
                 alert.getCreatedAt(),
@@ -124,11 +158,14 @@ public class JobFinderMapper {
     public JobNotificationResponse toNotificationResponse(
             JobNotificationEntity notification
     ) {
-        JobListingEntity job = notification.getJobListing();
+        JobListingEntity job =
+                notification.getJobListing();
 
         return new JobNotificationResponse(
                 notification.getId(),
-                notification.getAlertSubscription().getId(),
+                notification
+                        .getAlertSubscription()
+                        .getId(),
                 job.getId(),
                 job.getTitle(),
                 job.getCompany(),
@@ -140,32 +177,56 @@ public class JobFinderMapper {
         );
     }
 
-    private String preview(String value, int maximumLength) {
+    private String preview(
+            String value,
+            int maximumLength
+    ) {
         if (value == null) {
             return "";
         }
 
-        String normalized = value.replaceAll("\\s+", " ").trim();
-        return normalized.length() <= maximumLength
-                ? normalized
-                : normalized.substring(0, maximumLength).trim() + "...";
+        String normalized =
+                value.replaceAll(
+                                "\\s+",
+                                " "
+                        )
+                        .trim();
+
+        if (normalized.length() <= maximumLength) {
+            return normalized;
+        }
+
+        return normalized.substring(
+                0,
+                maximumLength
+        ).trim() + "...";
     }
 
     private static final class ListCopy {
+
         private ListCopy() {
         }
 
-        private static <T> java.util.List<T> of(java.util.Collection<T> values) {
-            return values == null ? java.util.List.of() : java.util.List.copyOf(values);
+        private static <T> java.util.List<T> of(
+                java.util.Collection<T> values
+        ) {
+            return values == null
+                    ? java.util.List.of()
+                    : java.util.List.copyOf(values);
         }
     }
 
     private static final class SetCopy {
+
         private SetCopy() {
         }
 
-        private static <T> java.util.Set<T> of(java.util.Collection<T> values) {
-            return values == null ? java.util.Set.of() : java.util.Set.copyOf(values);
+        private static <T> java.util.Set<T> of(
+                java.util.Collection<T> values
+        ) {
+            return values == null
+                    ? java.util.Set.of()
+                    : java.util.Set.copyOf(values);
         }
     }
 }

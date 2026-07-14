@@ -5,6 +5,7 @@ import com.vyankatesh.resumeoptimizer.jobfinder.model.JobSource;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface JobListingRepository extends
@@ -14,5 +15,11 @@ public interface JobListingRepository extends
     Optional<JobListingEntity> findBySourceAndExternalId(
             JobSource source,
             String externalId
+    );
+
+    List<JobListingEntity> findAllByActiveTrue();
+
+    List<JobListingEntity> findAllByActiveTrueAndSource(
+            JobSource source
     );
 }
