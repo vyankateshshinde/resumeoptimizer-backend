@@ -134,6 +134,14 @@ public class JobFinderMapper {
                 job.getLocation(),
                 job.getWorkArrangement(),
                 job.getEmploymentType(),
+
+                job.getMinimumExperience(),
+                job.getMaximumExperience(),
+                job.getExperienceRequirementType(),
+                job.getExperienceEvidence(),
+                job.getExperienceConfidence(),
+                job.getExperienceExtractionMethod(),
+
                 job.getPostedAt(),
                 job.getApplyUrl(),
                 savedJob.getSavedAt()
@@ -163,13 +171,23 @@ public class JobFinderMapper {
 
         return new JobNotificationResponse(
                 notification.getId(),
+
                 notification
                         .getAlertSubscription()
                         .getId(),
+
                 job.getId(),
                 job.getTitle(),
                 job.getCompany(),
                 job.getLocation(),
+
+                job.getMinimumExperience(),
+                job.getMaximumExperience(),
+                job.getExperienceRequirementType(),
+                job.getExperienceEvidence(),
+                job.getExperienceConfidence(),
+                job.getExperienceExtractionMethod(),
+
                 job.getApplyUrl(),
                 notification.getMatchPercentage(),
                 notification.isRead(),
@@ -192,7 +210,8 @@ public class JobFinderMapper {
                         )
                         .trim();
 
-        if (normalized.length() <= maximumLength) {
+        if (normalized.length()
+                <= maximumLength) {
             return normalized;
         }
 
